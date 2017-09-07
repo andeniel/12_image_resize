@@ -1,9 +1,10 @@
 import argparse
+import sys
 from PIL import Image
 from os.path import basename, splitext, dirname, abspath, join
 
 
-class ResizeImage(object):
+class Resize_Image(object):
 
     def __init__(self, src_path):
         self.src_path = src_path
@@ -22,12 +23,11 @@ class ResizeImage(object):
             if is_landscape is not (width >= height):
                 print("Ориентация исходного изображения \
                 и нового не соответствует")
-                return None
+                return -1
         try:
             self.src_image = self.src_image.resize((width, height))
-            return self.src_image
         except IOError:
-            return None
+            return -1
 
     def scale(self, scale):
         width, height = self.src_image.size
@@ -35,9 +35,8 @@ class ResizeImage(object):
         new_height = int(height*scale)
         try:
             self.src_image = self.src_image.resize((new_width, new_height))
-            return self.src_image
         except IOError:
-            return None
+            return -1
 
     def get_new_filename(self):
         width, height = self.src_image.size
@@ -86,25 +85,22 @@ if __name__ == '__main__':
     )
 
     args = aparser.parse_args()
-    resizeImage = ResizeImage(args.source_image)
+    new_image = Resize_Image(args.source_image)
 
-    if (args.width or args.height) and args.scale:
-        print("Ошибка, параметр scale указывается без ширины или высоты")
-        exit(1)
-    elif args.scale:
-        if resizeImage.scale(args.scale):
-            print("Размер изображения успешно изменен!")
-            resizeImage.save(args.output)
+    if args.width is None and args.height is None and args.scale is None:
+        print(
+            "Ошибка! необходим хоть один из \
+            параметров --scale, --width, --height")
+        sys.exit(1)
+
+    if args.scale:
+        if args.width is None and args.height is None:
+            error_message = new_image.scale(args.scale)
         else:
-            print("Ошибка! Во время операции scale")
+            print("Ошибка, параметр scale указывается без ширины или высоты")
+            sys.exit(1)
     else:
-        if args.width or args.height:
-            if resizeImage.smart_resize(args.width, args.height):
-                print("Размер изображения успешно изменен!")
-                resizeImage.save(args.output)
-            else:
-                print("Ошибка! Во время операции resize")
-        else:
-            print(
-                "Ошибка! необходим хоть один из \
-                параметров --scale, --width, --height")
+        error_message = new_image.smart_resize(args.width, args.height)
+
+    if error_message is None:
+        new_image.save(args.output)
