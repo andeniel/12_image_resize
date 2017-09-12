@@ -4,6 +4,12 @@ from PIL import Image
 from os.path import basename, splitext, dirname, abspath, join
 
 
+class ImageResizeException(Exception):
+
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)
+
+
 class Resize_Image(object):
 
     def __init__(self, src_path):
@@ -13,7 +19,7 @@ class Resize_Image(object):
 
     def smart_resize(self, width, height):
         src_width, src_height = self.src_image.size
-        is_landscape = True if src_width >= src_height else False
+        is_landscape = bool(src_width >= src_height)
 
         if height is None:
             height = int(width * src_height / src_width)
@@ -21,13 +27,15 @@ class Resize_Image(object):
             width = int(height * src_width / src_height)
         else:
             if is_landscape is not (width >= height):
-                print("Ориентация исходного изображения \
-                и нового не соответствует")
-                return -1
+                raise ImageResizeException(
+                    "Ориентация исходного изображения "
+                    "и нового не соответствует"
+                    )
         try:
             self.src_image = self.src_image.resize((width, height))
+            return self.src_image
         except IOError:
-            return -1
+            raise ImageResizeException("Ошибка в процессе resize")
 
     def scale(self, scale):
         width, height = self.src_image.size
@@ -35,8 +43,9 @@ class Resize_Image(object):
         new_height = int(height*scale)
         try:
             self.src_image = self.src_image.resize((new_width, new_height))
+            return self.src_image
         except IOError:
-            return -1
+            raise ImageResizeException("Ошибка в процессе resize")
 
     def get_new_filename(self):
         width, height = self.src_image.size
@@ -50,13 +59,10 @@ class Resize_Image(object):
         dest_image = dest_image if dest_image else self.get_new_filename()
         try:
             self.src_image.save(dest_image, self.src_format)
-            print(
-                "Изображение %s успешно сохранено в %s"
-                % (self.src_path, dest_image))
             return dest_image
         except IOError:
-            print("Ошибка! Изображение %s не сохранено" % (self.src_path))
-            return None
+            raise ImageResizeException(
+                "Ошибка! Изображение %s не сохранено" % (self.src_path))
 
 if __name__ == '__main__':
     aparser = argparse.ArgumentParser()
@@ -89,18 +95,26 @@ if __name__ == '__main__':
 
     if args.width is None and args.height is None and args.scale is None:
         print(
-            "Ошибка! необходим хоть один из \
-            параметров --scale, --width, --height")
+            "Ошибка! необходим хоть один из "
+            "параметров --scale, --width, --height")
         sys.exit(1)
 
-    if args.scale:
-        if args.width is None and args.height is None:
-            error_message = new_image.scale(args.scale)
+    try:
+        if args.scale:
+            if args.width is None and args.height is None:
+                result_image = new_image.scale(args.scale)
+            else:
+                print(
+                    "Ошибка, параметр scale указывается "
+                    "без ширины или высоты")
+                sys.exit(1)
         else:
-            print("Ошибка, параметр scale указывается без ширины или высоты")
-            sys.exit(1)
-    else:
-        error_message = new_image.smart_resize(args.width, args.height)
+            result_image = new_image.smart_resize(args.width, args.height)
 
-    if error_message is None:
-        new_image.save(args.output)
+        if result_image:
+            dest_image = new_image.save(args.output)
+            print(
+                "Изображение %s успешно сохранено в %s"
+                % (args.source_image, dest_image))
+    except ImageResizeException as exception:
+        print(exception)
