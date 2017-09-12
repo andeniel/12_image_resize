@@ -64,7 +64,8 @@ class Resize_Image(object):
             raise ImageResizeException(
                 "Ошибка! Изображение %s не сохранено" % (self.src_path))
 
-if __name__ == '__main__':
+
+def init_arguments():
     aparser = argparse.ArgumentParser()
     aparser.add_argument(
         'source_image',
@@ -89,32 +90,36 @@ if __name__ == '__main__':
         '-o', '--output',
         help="Output result image to filepath"
     )
-
     args = aparser.parse_args()
-    new_image = Resize_Image(args.source_image)
-
     if args.width is None and args.height is None and args.scale is None:
         print(
             "Ошибка! необходим хоть один из "
             "параметров --scale, --width, --height")
         sys.exit(1)
 
+    if args.scale and (args.width is not None or args.height is not None):
+        print(
+            "Ошибка, параметр scale указывается "
+            "без ширины или высоты")
+        sys.exit(1)
+
+    return args
+
+
+if __name__ == '__main__':
+    args = init_arguments()
+    new_image = Resize_Image(args.source_image)
+
     try:
         if args.scale:
-            if args.width is None and args.height is None:
-                result_image = new_image.scale(args.scale)
-            else:
-                print(
-                    "Ошибка, параметр scale указывается "
-                    "без ширины или высоты")
-                sys.exit(1)
+            new_image.scale(args.scale)
         else:
-            result_image = new_image.smart_resize(args.width, args.height)
+            new_image.smart_resize(args.width, args.height)
 
-        if result_image:
-            dest_image = new_image.save(args.output)
-            print(
-                "Изображение %s успешно сохранено в %s"
-                % (args.source_image, dest_image))
+        dest_image = new_image.save(args.output)
+        print(
+            "Изображение %s успешно сохранено в %s"
+            % (args.source_image, dest_image))
+
     except ImageResizeException as exception:
         print(exception)
