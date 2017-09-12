@@ -92,22 +92,25 @@ def init_arguments():
     )
     args = aparser.parse_args()
     if args.width is None and args.height is None and args.scale is None:
-        print(
-            "Ошибка! необходим хоть один из "
-            "параметров --scale, --width, --height")
-        sys.exit(1)
+        return None
 
     if args.scale and (args.width is not None or args.height is not None):
-        print(
-            "Ошибка, параметр scale указывается "
-            "без ширины или высоты")
-        sys.exit(1)
+        return None
 
     return args
 
 
 if __name__ == '__main__':
     args = init_arguments()
+    if args is None:
+        print(
+            "Ошибка! необходим хоть один из "
+            "аргументов --scale, --width, --height и "
+            "не указывать аргумент --scale вместе с "
+            "аргументами --width, --height"
+        )
+        sys.exit(1)
+
     new_image = Resize_Image(args.source_image)
 
     try:
