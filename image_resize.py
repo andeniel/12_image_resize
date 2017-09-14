@@ -136,11 +136,8 @@ if __name__ == '__main__':
             "Изображение %s успешно сохранено в %s"
             % (args.source_image, dest_image))
 
-    except ImageResizeException as exception:
-        print(exception)
-
-    except ImageGeneralException as exception:
-        print(exception)
-
-    except ImageSaveException as exception:
+    except (
+            ImageResizeException,
+            ImageGeneralException,
+            ImageSaveException) as exception:
         print(exception)
