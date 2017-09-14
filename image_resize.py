@@ -4,6 +4,18 @@ from PIL import Image
 from os.path import basename, splitext, dirname, abspath, join
 
 
+class ImageSaveException(Exception):
+
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)
+
+
+class ImageGeneralException(Exception):
+
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)
+
+
 class ImageResizeException(Exception):
 
     def __init__(self, *args, **kwargs):
@@ -27,7 +39,7 @@ class Resize_Image(object):
             width = int(height * src_width / src_height)
         else:
             if is_landscape is not (width >= height):
-                raise ImageResizeException(
+                raise ImageGeneralException(
                     "Ориентация исходного изображения "
                     "и нового не соответствует"
                     )
@@ -61,7 +73,7 @@ class Resize_Image(object):
             self.src_image.save(dest_image, self.src_format)
             return dest_image
         except IOError:
-            raise ImageResizeException(
+            raise ImageSaveException(
                 "Ошибка! Изображение %s не сохранено" % (self.src_path))
 
 
@@ -125,4 +137,10 @@ if __name__ == '__main__':
             % (args.source_image, dest_image))
 
     except ImageResizeException as exception:
+        print(exception)
+
+    except ImageGeneralException as exception:
+        print(exception)
+
+    except ImageSaveException as exception:
         print(exception)
